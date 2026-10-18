@@ -103,6 +103,7 @@ private fun AuthenticatedLionDenSession(currentUserId: String) {
     val selectedCareerId by viewModel.selectedCareerId.collectAsStateWithLifecycle()
     val statusBanner by viewModel.statusBannerMessage.collectAsStateWithLifecycle()
     val activeEventModal by viewModel.activeEventModal.collectAsStateWithLifecycle()
+    val activeNightEventModal by viewModel.activeNightEventModal.collectAsStateWithLifecycle()
 
     var showMatriculationPortal by rememberSaveable { mutableStateOf(false) }
 
@@ -184,11 +185,22 @@ private fun AuthenticatedLionDenSession(currentUserId: String) {
                     hallOfFame = hallOfFameList,
                     statusBanner = statusBanner,
                     activeEventModal = activeEventModal,
+                    activeNightEventModal = activeNightEventModal,
                     onDismissBanner = viewModel::dismissBanner,
                     onTriggerShenanigan = { viewModel.triggerWeeklyShenanigan(activeCareer) },
                     onDismissShenanigan = viewModel::dismissEventModal,
                     onResolveShenanigan = { event, choice ->
                         viewModel.resolveShenaniganChoice(activeCareer, event, choice)
+                    },
+                    onTriggerHostelNightRest = {
+                        viewModel.triggerHostelNightRest(activeCareer)
+                    },
+                    onDismissNightShenanigan = viewModel::dismissNightEventModal,
+                    onResolveNightShenanigan = { nightEvent, choice ->
+                        viewModel.resolveHostelNightShenanigan(activeCareer, nightEvent, choice)
+                    },
+                    onVibeToAfrobeatsTrack = { track ->
+                        viewModel.vibeToAfrobeatsTrack(activeCareer, track)
                     },
                     onPerformSpotAction = { action ->
                         viewModel.performSpotAction(activeCareer, action)

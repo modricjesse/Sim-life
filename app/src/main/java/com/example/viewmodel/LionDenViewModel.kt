@@ -4,10 +4,13 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AcademicStanding
+import com.example.data.AfrobeatsTrack
 import com.example.data.AlumniRecord
 import com.example.data.CampusRelationshipNpc
 import com.example.data.CampusShenaniganEvent
 import com.example.data.CampusSocialEvent
+import com.example.data.HostelNightEvent
+import com.example.data.HostelNightShenanigansGenerator
 import com.example.data.LionDenRepository
 import com.example.data.NpcRelationshipState
 import com.example.data.RelationshipType
@@ -86,6 +89,9 @@ class LionDenViewModel(
     private val _activeEventModal = MutableStateFlow<CampusShenaniganEvent?>(null)
     val activeEventModal: StateFlow<CampusShenaniganEvent?> = _activeEventModal.asStateFlow()
 
+    private val _activeNightEventModal = MutableStateFlow<HostelNightEvent?>(null)
+    val activeNightEventModal: StateFlow<HostelNightEvent?> = _activeNightEventModal.asStateFlow()
+
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
@@ -107,6 +113,141 @@ class LionDenViewModel(
 
     fun dismissEventModal() {
         _activeEventModal.value = null
+    }
+
+    fun dismissNightEventModal() {
+        _activeNightEventModal.value = null
+    }
+
+    fun triggerHostelNightRest(career: StudentCareer) {
+        if (career.isGraduated) {
+            _statusBannerMessage.value = "You have already graduated! Start a new career or view Hall of Fame."
+            return
+        }
+        val restoredEnergy = (career.energy + 22L).coerceIn(0L, 100L)
+        val restoredSanity = (career.sanity + 8L).coerceIn(0L, 100L)
+        val restLog = "L${career.level} S${career.semester} W${career.week}: Turned in for the night at ${career.hostel} (+22 Energy, +8 Sanity)."
+        val updatedCareer = career.copy(
+            energy = restoredEnergy,
+            sanity = restoredSanity,
+            recentLogs = (listOf(restLog) + career.recentLogs).take(30)
+        )
+        val nightEvent = HostelNightShenanigansGenerator.rollNightEvent(
+            hostelName = career.hostel,
+            recentLogs = career.recentLogs
+        )
+        _activeNightEventModal.value = nightEvent
+        saveCareerUpdate(updatedCareer, "Resting at ${career.hostel}... Midnight Hostel Shenanigan triggered!")
+    }
+
+    fun resolveHostelNightShenanigan(
+        career: StudentCareer,
+        event: HostelNightEvent,
+        choice: ShenaniganChoice
+    ) {
+        _activeNightEventModal.value = null
+        if (choice.nairaDelta < 0 && career.naira + choice.nairaDelta < 0) {
+            _statusBannerMessage.value = "Not enough Naira (Need ₦${-choice.nairaDelta}) for that midnight move! Pick another option."
+            return
+        }
+
+        val gearSynergy = HostelNightShenanigansGenerator.evaluateGearBonus(event, career.inventory)
+        val totalEnergyDelta = choice.energyDelta + gearSynergy.extraEnergy
+        val totalSanityDelta = choice.sanityDelta + gearSynergy.extraSanity
+        val totalPrepDelta = choice.prepDelta + gearSynergy.extraPrep
+        val totalCredDelta = choice.credDelta + gearSynergy.extraCred
+
+        val updatedNaira = (career.naira + choice.nairaDelta).coerceAtLeast(0L)
+        val updatedEnergy = (career.energy + totalEnergyDelta).coerceIn(0L, 100L)
+        val updatedSanity = (career.sanity + totalSanityDelta).coerceIn(0L, 100L)
+        val updatedPrep = (career.academicPrep + totalPrepDelta).coerceIn(0L, 100L)
+        val updatedCred = (career.streetCred + totalCredDelta).coerceIn(0L, 100L)
+        val updatedClout = (career.politicalClout + choice.cloutDelta).coerceIn(0L, 100L)
+
+        val updatedBadges = if (choice.badgeAwarded != null && !career.badges.contains(choice.badgeAwarded)) {
+            (career.badges + choice.badgeAwarded).take(25)
+        } else {
+            career.badges
+        }
+
+        val updatedTier = UnnCampusCatalog.computeSocialTier(
+            cred = updatedCred,
+            clout = updatedClout,
+            cgpa = career.cgpa,
+            naira = updatedNaira,
+            sugOffice = career.sugOffice
+        )
+
+        val gearNote = if (gearSynergy.isActive && gearSynergy.matchedItemName != null) {
+            " [Gear Perk: ${gearSynergy.matchedItemName}]"
+        } else ""
+
+        val logEntry = "L${career.level} S${career.semester} W${career.week} [NIGHT @ ${career.hostel} ${event.timestampLabel} - ${event.title}]: ${choice.outcomeNarrative}$gearNote"
+
+        val updatedCareer = career.copy(
+            naira = updatedNaira,
+            energy = updatedEnergy,
+            sanity = updatedSanity,
+            academicPrep = updatedPrep,
+            streetCred = updatedCred,
+            politicalClout = updatedClout,
+            socialTier = updatedTier,
+            badges = updatedBadges,
+            recentLogs = (listOf(logEntry) + career.recentLogs).take(30)
+        )
+        saveCareerUpdate(updatedCareer, "${choice.outcomeNarrative}$gearNote")
+    }
+
+    fun vibeToAfrobeatsTrack(career: StudentCareer, track: AfrobeatsTrack) {
+        if (career.isGraduated) {
+            _statusBannerMessage.value = "You have already graduated! Start a new career or view Hall of Fame."
+            return
+        }
+        val hasSpeakerGear = career.inventory.any {
+            it.contains("Speaker", ignoreCase = true) ||
+                it.contains("JBL", ignoreCase = true) ||
+                it.contains("AirPods", ignoreCase = true) ||
+                it.contains("Headphones", ignoreCase = true)
+        }
+        val extraCred = if (hasSpeakerGear) 4 else 0
+        val updatedEnergy = (career.energy + track.energyDelta).coerceIn(0L, 100L)
+        val updatedSanity = (career.sanity + track.sanityDelta).coerceIn(0L, 100L)
+        val updatedPrep = (career.academicPrep + track.prepDelta).coerceIn(0L, 100L)
+        val updatedCred = (career.streetCred + track.credDelta + extraCred).coerceIn(0L, 100L)
+        val updatedClout = (career.politicalClout + track.cloutDelta).coerceIn(0L, 100L)
+
+        val afrobeatsBadge = "Lion FM Afrobeats DJ"
+        val updatedBadges = if (!career.badges.contains(afrobeatsBadge)) {
+            (career.badges + afrobeatsBadge).take(25)
+        } else {
+            career.badges
+        }
+
+        val updatedTier = UnnCampusCatalog.computeSocialTier(
+            cred = updatedCred,
+            clout = updatedClout,
+            cgpa = career.cgpa,
+            naira = career.naira,
+            sugOffice = career.sugOffice
+        )
+
+        val gearTag = if (hasSpeakerGear) " [JBL Speaker Boost +4 Cred]" else ""
+        val logEntry = "L${career.level} S${career.semester} W${career.week} [AFROBEATS VIBE]: Blasted '${track.title}' by ${track.artist} (${track.subgenre} • ${track.bpm} BPM) at ${track.campusVibeLocation}$gearTag."
+
+        val updatedCareer = career.copy(
+            energy = updatedEnergy,
+            sanity = updatedSanity,
+            academicPrep = updatedPrep,
+            streetCred = updatedCred,
+            politicalClout = updatedClout,
+            socialTier = updatedTier,
+            badges = updatedBadges,
+            recentLogs = (listOf(logEntry) + career.recentLogs).take(30)
+        )
+        saveCareerUpdate(
+            updatedCareer,
+            "Now Vibing: '${track.title}' by ${track.artist}!$gearTag"
+        )
     }
 
     private fun buildRichMetadataList(
@@ -892,6 +1033,13 @@ class LionDenViewModel(
                 naira = stipendPlusNaira,
                 sugOffice = base.sugOffice
             )
+            // Automatic night-time hostel shenanigan trigger at week transition (70% probability)
+            if (_activeNightEventModal.value == null && Random.nextInt(100) < 70) {
+                _activeNightEventModal.value = HostelNightShenanigansGenerator.rollNightEvent(
+                    hostelName = base.hostel,
+                    recentLogs = base.recentLogs
+                )
+            }
             return base.copy(
                 week = nextWeek,
                 naira = stipendPlusNaira,

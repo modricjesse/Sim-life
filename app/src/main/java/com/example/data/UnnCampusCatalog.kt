@@ -405,6 +405,15 @@ object UnnCampusCatalog {
             benefit = "Cook Jollof & beans in the hostel anytime (+15 Energy, +12 Sanity).",
             energyBonus = 15,
             sanityBonus = 12
+        ),
+        UnnShopItem(
+            id = "jbl_speaker",
+            name = "JBL Flip Hostel Bluetooth Speaker",
+            priceNaira = 19500L,
+            category = "Social",
+            benefit = "Blast Afrobeats hits across the hostel wing & boost Lion FM 91.1 sessions (+16 Street Cred, +10 Sanity).",
+            credBonus = 16,
+            sanityBonus = 10
         )
     )
 

@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
@@ -88,7 +89,8 @@ fun InteractiveUnnMapTabContent(
     currentLocationId: String,
     onNavigateTrek: (UnnMapLandmark) -> Unit,
     onNavigateShuttle: (UnnMapLandmark) -> Unit,
-    onExecuteLandmarkAction: (UnnMapLandmark) -> Unit
+    onExecuteLandmarkAction: (UnnMapLandmark) -> Unit,
+    onTriggerHostelNightRest: () -> Unit = {}
 ) {
     val currentLandmark = remember(currentLocationId) {
         UnnInteractiveMapData.findLandmark(currentLocationId)
@@ -235,7 +237,8 @@ fun InteractiveUnnMapTabContent(
                 trekEnergyCost = trekEnergy,
                 onNavigateTrek = { onNavigateTrek(selectedLandmark) },
                 onNavigateShuttle = { onNavigateShuttle(selectedLandmark) },
-                onExecuteAction = { onExecuteLandmarkAction(selectedLandmark) }
+                onExecuteAction = { onExecuteLandmarkAction(selectedLandmark) },
+                onTriggerHostelNightRest = onTriggerHostelNightRest
             )
         }
 
@@ -569,9 +572,13 @@ private fun SelectedLandmarkNavigationCard(
     trekEnergyCost: Int,
     onNavigateTrek: () -> Unit,
     onNavigateShuttle: () -> Unit,
-    onExecuteAction: () -> Unit
+    onExecuteAction: () -> Unit,
+    onTriggerHostelNightRest: () -> Unit
 ) {
     val isAlreadyHere = currentLandmark.id == selectedLandmark.id
+    val isHostelOrLodge = selectedLandmark.primaryActionCategory == "HOSTEL" ||
+        selectedLandmark.zone == CampusZone.HOSTEL_RING ||
+        selectedLandmark.zone == CampusZone.GATES_AND_LODGES
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -699,6 +706,27 @@ private fun SelectedLandmarkNavigationCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            if (isHostelOrLodge) {
+                OutlinedButton(
+                    onClick = onTriggerHostelNightRest,
+                    enabled = !career.isGraduated,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("map_hostel_night_rest_button"),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.5.dp, SanityViolet)
+                ) {
+                    Icon(Icons.Default.Bedtime, contentDescription = null, tint = SanityViolet)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Turn In for the Night (+22 Energy & Midnight Roll)",
+                        color = SanityViolet,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

@@ -209,4 +209,122 @@ class ExampleRobolectricTest {
         composeTestRule.onNodeWithText("CAMPUS SOCIAL STRATA & CLIQUE").assertIsDisplayed()
         composeTestRule.onNodeWithTag("social_subtab_clubs_and_cliques").assertExists()
     }
+
+    @Test
+    fun hostelNightShenanigansGenerator_coversAllFiveTypesAndTailorsToHostel() {
+        val allTypes = com.example.data.HostelNightScenarioType.entries.toSet()
+        val representedTypes = com.example.data.HostelNightShenanigansGenerator.nightEvents.map { it.scenarioType }.toSet()
+        assertEquals(allTypes, representedTypes)
+        assertTrue(com.example.data.HostelNightShenanigansGenerator.nightEvents.size >= 10)
+
+        // Verify Hilltop Lodge excludes on-campus Hall Porter Curfew Lockout
+        val hilltopPool = com.example.data.HostelNightShenanigansGenerator.eligibleEventsForHostel("Hilltop Off-Campus Lodge")
+        assertTrue(hilltopPool.none { it.id == "night_curfew_gate_lockout" })
+
+        // Verify Mary Slessor Hall includes Hall Porter inspections & water shortages
+        val slessorPool = com.example.data.HostelNightShenanigansGenerator.eligibleEventsForHostel("Mary Slessor Hall")
+        assertTrue(slessorPool.any { it.scenarioType == com.example.data.HostelNightScenarioType.PORTER_INSPECTION })
+        assertTrue(slessorPool.any { it.scenarioType == com.example.data.HostelNightScenarioType.WATER_SHORTAGE })
+
+        // Verify Odim Market gear synergy evaluation
+        val blackoutEvent = com.example.data.HostelNightShenanigansGenerator.nightEvents.first {
+            it.id == "night_transformer_spark_blackout"
+        }
+        val bonusWithPowerBank = com.example.data.HostelNightShenanigansGenerator.evaluateGearBonus(
+            event = blackoutEvent,
+            inventory = listOf("20,000mAh Miracle PowerBank")
+        )
+        assertTrue(bonusWithPowerBank.isActive)
+        assertTrue(bonusWithPowerBank.extraSanity > 0)
+
+        val rolled = com.example.data.HostelNightShenanigansGenerator.rollNightEvent(
+            hostelName = "Okija Hall",
+            recentLogs = emptyList()
+        )
+        assertTrue(rolled.choices.size >= 3)
+    }
+
+    @Test
+    fun hostelNightShenaniganDialog_rendersWhenActive() {
+        val sampleCareer = StudentCareer(
+            id = "career_night_test",
+            userId = "user_1",
+            studentName = "Kelechi Eze",
+            regNumber = "2026/248999",
+            campus = "Nsukka",
+            faculty = "Engineering",
+            department = "Electronic Engineering",
+            hostel = "Okija Hall",
+            inventory = listOf("Rechargeable Night Class Lamp")
+        )
+        val sampleNightEvent = com.example.data.HostelNightShenanigansGenerator.nightEvents.first()
+
+        composeTestRule.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                LionDenGameScreen(
+                    career = sampleCareer,
+                    allCareers = listOf(sampleCareer),
+                    hallOfFame = emptyList(),
+                    statusBanner = null,
+                    activeEventModal = null,
+                    activeNightEventModal = sampleNightEvent,
+                    onDismissBanner = {},
+                    onTriggerShenanigan = {},
+                    onDismissShenanigan = {},
+                    onResolveShenanigan = { _, _ -> },
+                    onPerformSpotAction = {},
+                    onNavigateMapTrek = {},
+                    onNavigateMapShuttle = {},
+                    onExecuteLandmarkAction = {},
+                    onToggleCourseRegistration = {},
+                    onAttendCourseLecture = {},
+                    onStudyAtJpClarkLibrary = {},
+                    onSitMidTermExams = {},
+                    onSitFinalSemesterExams = {},
+                    onInteractNpc = { _, _ -> },
+                    onJoinOrAttendClub = {},
+                    onSelectClique = {},
+                    onAttendSocialEvent = {},
+                    onBuyShopItem = {},
+                    onSwitchHostel = {},
+                    onCampaignOffice = {},
+                    onSelectCareer = {},
+                    onStartNewCareer = {},
+                    onDeleteCareer = {},
+                    onSignOut = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText(sampleNightEvent.title).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("night_shenanigan_choice_0").assertIsDisplayed()
+    }
+
+    @Test
+    fun verifyAfrobeatsCatalogAndDeckUi() {
+        val tracks = com.example.data.UnnAfrobeatsCatalog.tracks
+        assertTrue(tracks.size >= 8)
+        assertTrue(tracks.any { it.artist.contains("Burna Boy") && it.title.contains("Last Last") })
+        assertTrue(tracks.any { it.artist.contains("Davido") && it.title.contains("Unavailable") })
+        assertTrue(tracks.any { it.artist.contains("Rema") && it.title.contains("Calm Down") })
+        assertTrue(tracks.any { it.artist.contains("Wizkid") && it.title.contains("Essence") })
+        assertTrue(tracks.any { it.artist.contains("Asake") && it.title.contains("Terminator") })
+        assertTrue(tracks.any { it.artist.contains("Ayra Starr") && it.title.contains("Rush") })
+
+        var vibedTrack: com.example.data.AfrobeatsTrack? = null
+        composeTestRule.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.LionFmAfrobeatsDeckCard(
+                    inventory = listOf("JBL Flip Hostel Bluetooth Speaker"),
+                    enabled = true,
+                    onVibeToTrack = { vibedTrack = it }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("LION FM 91.1 NSUKKA • AFROBEATS DECK").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("afrobeats_next_track_button").performClick()
+        composeTestRule.onNodeWithTag("afrobeats_vibe_boost_button").performClick()
+        assertEquals(tracks[1].id, vibedTrack?.id)
+    }
 }

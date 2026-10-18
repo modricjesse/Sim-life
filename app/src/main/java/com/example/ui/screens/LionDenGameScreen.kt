@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Explore
@@ -69,9 +70,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.AcademicStanding
+import com.example.data.AfrobeatsTrack
 import com.example.data.AlumniRecord
 import com.example.data.CampusShenaniganEvent
 import com.example.data.CampusSocialEvent
+import com.example.data.HostelNightEvent
+import com.example.data.HostelNightShenanigansGenerator
 import com.example.data.NpcRelationshipState
 import com.example.data.ShenaniganChoice
 import com.example.data.SocialClique
@@ -89,6 +93,7 @@ import com.example.data.UnnShopItem
 import com.example.data.UnnSocialAndClubsData
 import com.example.data.UnnSpotAction
 import com.example.ui.components.InteractiveUnnMapTabContent
+import com.example.ui.components.LionFmAfrobeatsDeckCard
 import com.example.ui.components.StatMeterPill
 import com.example.ui.components.UnnCampusHeroBanner
 import com.example.ui.theme.AlertCrimson
@@ -115,10 +120,15 @@ fun LionDenGameScreen(
     hallOfFame: List<AlumniRecord>,
     statusBanner: String?,
     activeEventModal: CampusShenaniganEvent?,
+    activeNightEventModal: HostelNightEvent? = null,
     onDismissBanner: () -> Unit,
     onTriggerShenanigan: () -> Unit,
     onDismissShenanigan: () -> Unit,
     onResolveShenanigan: (CampusShenaniganEvent, ShenaniganChoice) -> Unit,
+    onTriggerHostelNightRest: () -> Unit = {},
+    onDismissNightShenanigan: () -> Unit = {},
+    onResolveNightShenanigan: (HostelNightEvent, ShenaniganChoice) -> Unit = { _, _ -> },
+    onVibeToAfrobeatsTrack: (AfrobeatsTrack) -> Unit = {},
     onPerformSpotAction: (UnnSpotAction) -> Unit,
     onNavigateMapTrek: (UnnMapLandmark) -> Unit,
     onNavigateMapShuttle: (UnnMapLandmark) -> Unit,
@@ -167,6 +177,14 @@ fun LionDenGameScreen(
             event = activeEventModal,
             onDismiss = onDismissShenanigan,
             onSelectChoice = { choice -> onResolveShenanigan(activeEventModal, choice) }
+        )
+    } else if (activeNightEventModal != null) {
+        HostelNightShenaniganDialog(
+            event = activeNightEventModal,
+            hostelName = career.hostel,
+            inventory = career.inventory,
+            onDismiss = onDismissNightShenanigan,
+            onSelectChoice = { choice -> onResolveNightShenanigan(activeNightEventModal, choice) }
         )
     }
 
@@ -257,6 +275,8 @@ fun LionDenGameScreen(
                     career = career,
                     activeClique = activeClique,
                     onTriggerShenanigan = onTriggerShenanigan,
+                    onTriggerHostelNightRest = onTriggerHostelNightRest,
+                    onVibeToAfrobeatsTrack = onVibeToAfrobeatsTrack,
                     onQuickAction = onPerformSpotAction,
                     onJumpToTab = { currentTab = it }
                 )
@@ -266,7 +286,8 @@ fun LionDenGameScreen(
                     currentLocationId = currentLocationId,
                     onNavigateTrek = onNavigateMapTrek,
                     onNavigateShuttle = onNavigateMapShuttle,
-                    onExecuteLandmarkAction = onExecuteLandmarkAction
+                    onExecuteLandmarkAction = onExecuteLandmarkAction,
+                    onTriggerHostelNightRest = onTriggerHostelNightRest
                 )
 
                 LionDenTab.ACADEMICS -> AcademicProgressionTabContent(
@@ -450,11 +471,16 @@ private fun DenHubTabContent(
     career: StudentCareer,
     activeClique: String,
     onTriggerShenanigan: () -> Unit,
+    onTriggerHostelNightRest: () -> Unit,
+    onVibeToAfrobeatsTrack: (AfrobeatsTrack) -> Unit,
     onQuickAction: (UnnSpotAction) -> Unit,
     onJumpToTab: (LionDenTab) -> Unit
 ) {
     val currentWeekEvent = remember(career.level, career.semester, career.week) {
         UnnShenanigansEngine.pickEventForWeek(career.level, career.semester, career.week)
+    }
+    val hostelRiskSummary = remember(career.hostel) {
+        HostelNightShenanigansGenerator.hostelRiskProfileSummary(career.hostel)
     }
 
     LazyColumn(
@@ -511,6 +537,15 @@ private fun DenHubTabContent(
                     Text("Clubs & Life", color = CloutCyan, style = MaterialTheme.typography.labelMedium)
                 }
             }
+        }
+
+        // Lion FM 91.1 & Campus Afrobeats Jukebox Deck
+        item {
+            LionFmAfrobeatsDeckCard(
+                inventory = career.inventory,
+                enabled = !career.isGraduated,
+                onVibeToTrack = onVibeToAfrobeatsTrack
+            )
         }
 
         // Weekly Campus Shenanigan / Dilemma Card
@@ -588,6 +623,83 @@ private fun DenHubTabContent(
                             text = if (career.isGraduated) "Journey Completed"
                             else if (career.week == 8L) "Handle Dilemma & Sit Semester Exams!"
                             else "Handle Campus Dilemma (Advances Week)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        // Midnight Hostel Life & Night Shenanigans Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                border = BorderStroke(1.5.dp, SanityViolet)
+            ) {
+                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Bedtime,
+                                contentDescription = null,
+                                tint = SanityViolet
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "MIDNIGHT HOSTEL LIFE • ${career.hostel.uppercase()}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = SanityViolet
+                            )
+                        }
+                        Surface(
+                            color = SanityViolet.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(50),
+                            border = BorderStroke(1.dp, SanityViolet)
+                        ) {
+                            Text(
+                                text = "NIGHT ROLL",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Turn In for the Night at ${career.hostel}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = hostelRiskSummary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Button(
+                        onClick = onTriggerHostelNightRest,
+                        enabled = !career.isGraduated,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .testTag("trigger_hostel_night_rest_button"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SanityViolet,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(Icons.Default.Bedtime, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Rest at Hostel (+22 Energy, +8 Sanity & Night Event)",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -1213,3 +1325,145 @@ private fun ShenaniganDilemmaDialog(
         }
     )
 }
+
+@Composable
+private fun HostelNightShenaniganDialog(
+    event: HostelNightEvent,
+    hostelName: String,
+    inventory: List<String>,
+    onDismiss: () -> Unit,
+    onSelectChoice: (ShenaniganChoice) -> Unit
+) {
+    val gearSynergy = remember(event, inventory) {
+        HostelNightShenanigansGenerator.evaluateGearBonus(event, inventory)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = SanityViolet.copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(50),
+                        border = BorderStroke(1.dp, SanityViolet)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bedtime,
+                                contentDescription = null,
+                                tint = SanityViolet,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${event.timestampLabel} • ${event.scenarioType.label}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "🏨 $hostelName",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = LionGoldBright
+                )
+                Text(
+                    text = event.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = event.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (event.gearBonusDescription != null) {
+                    Surface(
+                        color = if (gearSynergy.isActive) UnnEmerald else MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (gearSynergy.isActive) UnnMintAccent else LionGold.copy(alpha = 0.4f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (gearSynergy.isActive) {
+                                "✅ Locker Gear Active (${gearSynergy.matchedItemName}): ${event.gearBonusDescription}"
+                            } else {
+                                "💡 Tip: Own '${event.helpfulGearKeyword}' from Odim Market for bonus stats (${event.gearBonusDescription})"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (gearSynergy.isActive) UnnMintAccent else LionGoldBright,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+                event.choices.forEachIndexed { idx, choice ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectChoice(choice) }
+                            .testTag("night_shenanigan_choice_$idx"),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = BorderStroke(1.dp, SanityViolet.copy(alpha = 0.7f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = choice.label,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = LionGoldBright
+                            )
+                            val deltaSummary = buildList {
+                                if (choice.nairaDelta != 0L) {
+                                    add(if (choice.nairaDelta > 0) "+₦${choice.nairaDelta}" else "-₦${-choice.nairaDelta}")
+                                }
+                                if (choice.energyDelta != 0) add("Energy ${if (choice.energyDelta > 0) "+" else ""}${choice.energyDelta}")
+                                if (choice.sanityDelta != 0) add("Sanity ${if (choice.sanityDelta > 0) "+" else ""}${choice.sanityDelta}")
+                                if (choice.prepDelta != 0) add("Prep ${if (choice.prepDelta > 0) "+" else ""}${choice.prepDelta}")
+                                if (choice.credDelta != 0) add("Cred ${if (choice.credDelta > 0) "+" else ""}${choice.credDelta}")
+                                if (choice.cloutDelta != 0) add("Clout ${if (choice.cloutDelta > 0) "+" else ""}${choice.cloutDelta}")
+                                if (choice.badgeAwarded != null) add("🏅 ${choice.badgeAwarded}")
+                            }.joinToString(" • ")
+                            if (deltaSummary.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = deltaSummary,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = UnnMintAccent
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("close_night_shenanigan_dialog_button")
+            ) {
+                Text("Sleep Through It", color = LionGold)
+            }
+        }
+    )
+}
+
