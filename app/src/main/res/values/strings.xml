@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Lion Den Sim</string>
+    <string name="unn_motto">To Restore the Dignity of Man</string>
+    <string name="portal_sign_in_title">UNN Student Portal Cloud Sync</string>
+    <string name="google_sign_in_cta">Sign in with Google</string>
+    <string name="matriculation_portal_title">UNN Matriculation Portal</string>
+    <string name="den_hub_tab">Den Hub</string>
+    <string name="campus_map_tab">Campus</string>
+    <string name="sug_politics_tab">SUG &amp; Clout</string>
+    <string name="odim_market_tab">Market</string>
+    <string name="transcript_records_tab">Records</string>
+</resources>

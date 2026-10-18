@@ -1,0 +1,6 @@
+{
+  "name": "Lion Den Sim",
+  "description": "University of Nigeria campus life simulator exploring academics, SUG politics, hostel shenanigans, and social hierarchies at the Den of Lions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

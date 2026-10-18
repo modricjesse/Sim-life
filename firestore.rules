@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 500));
+    }
+
+    function isValidStudentCareer(data, userId) {
+      return data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 60 &&
+             data.regNumber is string && data.regNumber.size() >= 1 && data.regNumber.size() <= 30 &&
+             data.campus is string && (data.campus == 'Nsukka' || data.campus == 'Enugu') &&
+             data.faculty is string && data.faculty.size() >= 1 && data.faculty.size() <= 80 &&
+             data.department is string && data.department.size() >= 1 && data.department.size() <= 80 &&
+             data.hostel is string && data.hostel.size() >= 1 && data.hostel.size() <= 80 &&
+             data.archetype is string && data.archetype.size() >= 1 && data.archetype.size() <= 60 &&
+             data.level is int && data.level >= 100 && data.level <= 600 &&
+             data.semester is int && (data.semester == 1 || data.semester == 2) &&
+             data.week is int && data.week >= 1 && data.week <= 20 &&
+             (data.cgpa is int || data.cgpa is float) && data.cgpa >= 0.0 && data.cgpa <= 5.0 &&
+             data.naira is int && data.naira >= 0 && data.naira <= 1000000000 &&
+             data.energy is int && data.energy >= 0 && data.energy <= 100 &&
+             data.sanity is int && data.sanity >= 0 && data.sanity <= 100 &&
+             data.academicPrep is int && data.academicPrep >= 0 && data.academicPrep <= 100 &&
+             data.streetCred is int && data.streetCred >= 0 && data.streetCred <= 100 &&
+             data.politicalClout is int && data.politicalClout >= 0 && data.politicalClout <= 100 &&
+             data.socialTier is string && data.socialTier.size() >= 1 && data.socialTier.size() <= 60 &&
+             data.sugOffice is string && data.sugOffice.size() >= 1 && data.sugOffice.size() <= 60 &&
+             data.carryOvers is int && data.carryOvers >= 0 && data.carryOvers <= 50 &&
+             data.isGraduated is bool &&
+             isBoundedStringList(data.inventory, 25) &&
+             isBoundedStringList(data.relationships, 25) &&
+             isBoundedStringList(data.recentLogs, 30) &&
+             isBoundedStringList(data.badges, 25) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAlumniRecord(data, userId) {
+      return data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 60 &&
+             data.regNumber is string && data.regNumber.size() >= 1 && data.regNumber.size() <= 30 &&
+             data.department is string && data.department.size() >= 1 && data.department.size() <= 80 &&
+             (data.finalCgpa is int || data.finalCgpa is float) && data.finalCgpa >= 0.0 && data.finalCgpa <= 5.0 &&
+             data.degreeClass is string && data.degreeClass.size() >= 1 && data.degreeClass.size() <= 50 &&
+             data.finalTitle is string && data.finalTitle.size() >= 1 && data.finalTitle.size() <= 80 &&
+             data.netWorthNaira is int && data.netWorthNaira >= 0 && data.netWorthNaira <= 1000000000 &&
+             data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/careers/{careerId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(careerId);
+      allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(careerId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'studentName', 'regNumber', 'campus', 'faculty', 'department',
+                         'hostel', 'archetype', 'level', 'semester', 'week', 'cgpa', 'naira',
+                         'energy', 'sanity', 'academicPrep', 'streetCred', 'politicalClout',
+                         'socialTier', 'sugOffice', 'carryOvers', 'isGraduated', 'inventory',
+                         'relationships', 'recentLogs', 'badges', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'studentName', 'regNumber', 'campus', 'faculty', 'department',
+                         'hostel', 'archetype', 'level', 'semester', 'week', 'cgpa', 'naira',
+                         'energy', 'sanity', 'academicPrep', 'streetCred', 'politicalClout',
+                         'socialTier', 'sugOffice', 'carryOvers', 'isGraduated', 'inventory',
+                         'relationships', 'recentLogs', 'badges', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidStudentCareer(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(careerId) &&
+                       isValidStudentCareer(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'studentName', 'campus', 'faculty', 'department', 'hostel', 'archetype',
+                         'level', 'semester', 'week', 'cgpa', 'naira', 'energy', 'sanity',
+                         'academicPrep', 'streetCred', 'politicalClout', 'socialTier', 'sugOffice',
+                         'carryOvers', 'isGraduated', 'inventory', 'relationships', 'recentLogs',
+                         'badges', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(careerId);
+    }
+
+    match /users/{userId}/hall_of_fame/{recordId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(recordId);
+      allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(recordId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'studentName', 'regNumber', 'department', 'finalCgpa',
+                         'degreeClass', 'finalTitle', 'netWorthNaira', 'summary',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'studentName', 'regNumber', 'department', 'finalCgpa',
+                         'degreeClass', 'finalTitle', 'netWorthNaira', 'summary',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidAlumniRecord(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(recordId) &&
+                       isValidAlumniRecord(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'finalTitle', 'summary', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(recordId);
+    }
+  }
+}

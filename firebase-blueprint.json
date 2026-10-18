@@ -1,0 +1,236 @@
+{
+  "entities": {
+    "StudentCareer": {
+      "title": "StudentCareer",
+      "description": "Represents a player's active or completed University of Nigeria (UNN/UNEC) student simulation career.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The authenticated Firebase Auth UID owning this career."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Full name of the Lion or Lioness student."
+        },
+        "regNumber": {
+          "type": "string",
+          "description": "UNN Registration Number (e.g., 2026/248910)."
+        },
+        "campus": {
+          "type": "string",
+          "enum": ["Nsukka", "Enugu"],
+          "description": "UNN Nsukka main campus or UNEC Enugu campus."
+        },
+        "faculty": {
+          "type": "string",
+          "description": "Faculty name at UNN/UNEC."
+        },
+        "department": {
+          "type": "string",
+          "description": "Academic department name."
+        },
+        "hostel": {
+          "type": "string",
+          "description": "Assigned hall of residence or off-campus lodge (e.g., Zik's Flats, Bello Hall, Odenigwe)."
+        },
+        "archetype": {
+          "type": "string",
+          "description": "Student background/persona archetype."
+        },
+        "level": {
+          "type": "integer",
+          "description": "Current academic level (100 to 500)."
+        },
+        "semester": {
+          "type": "integer",
+          "description": "Current semester (1 or 2)."
+        },
+        "week": {
+          "type": "integer",
+          "description": "Current week of the semester (1 to 14)."
+        },
+        "cgpa": {
+          "type": "number",
+          "description": "Cumulative Grade Point Average (0.00 to 5.00)."
+        },
+        "naira": {
+          "type": "integer",
+          "description": "Available pocket money in Naira."
+        },
+        "energy": {
+          "type": "integer",
+          "description": "Physical stamina (0 to 100)."
+        },
+        "sanity": {
+          "type": "integer",
+          "description": "Mental composure and peace of mind (0 to 100)."
+        },
+        "academicPrep": {
+          "type": "integer",
+          "description": "Current semester exam readiness (0 to 100)."
+        },
+        "streetCred": {
+          "type": "integer",
+          "description": "Campus popularity and social hierarchy standing (0 to 100)."
+        },
+        "politicalClout": {
+          "type": "integer",
+          "description": "SUG and faculty political influence (0 to 100)."
+        },
+        "socialTier": {
+          "type": "string",
+          "description": "Current campus social hierarchy label."
+        },
+        "sugOffice": {
+          "type": "string",
+          "description": "Current Student Union Government or departmental position."
+        },
+        "carryOvers": {
+          "type": "integer",
+          "description": "Number of failed/carried-over courses."
+        },
+        "isGraduated": {
+          "type": "boolean",
+          "description": "Whether the student has completed their UNN journey."
+        },
+        "inventory": {
+          "type": "array",
+          "description": "Bounded list of owned campus survival items (max 25)."
+        },
+        "relationships": {
+          "type": "array",
+          "description": "Bounded list of NPC relationship states (max 25)."
+        },
+        "recentLogs": {
+          "type": "array",
+          "description": "Bounded list of recent campus diary log entries (max 30)."
+        },
+        "badges": {
+          "type": "array",
+          "description": "Bounded list of earned UNN achievement badges (max 25)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the career was created via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the career was last updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "studentName",
+        "regNumber",
+        "campus",
+        "faculty",
+        "department",
+        "hostel",
+        "archetype",
+        "level",
+        "semester",
+        "week",
+        "cgpa",
+        "naira",
+        "energy",
+        "sanity",
+        "academicPrep",
+        "streetCred",
+        "politicalClout",
+        "socialTier",
+        "sugOffice",
+        "carryOvers",
+        "isGraduated",
+        "inventory",
+        "relationships",
+        "recentLogs",
+        "badges",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AlumniRecord": {
+      "title": "AlumniRecord",
+      "description": "Represents a completed graduation or convocation Hall of Fame record for a user's UNN student.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The authenticated Firebase Auth UID owning this alumni record."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Graduating student name."
+        },
+        "regNumber": {
+          "type": "string",
+          "description": "UNN Registration Number."
+        },
+        "department": {
+          "type": "string",
+          "description": "Department graduated from."
+        },
+        "finalCgpa": {
+          "type": "number",
+          "description": "Final graduation CGPA (0.00 to 5.00)."
+        },
+        "degreeClass": {
+          "type": "string",
+          "description": "Honours classification (e.g., First Class Honours, Second Class Upper)."
+        },
+        "finalTitle": {
+          "type": "string",
+          "description": "Campus legacy title earned upon convocation."
+        },
+        "netWorthNaira": {
+          "type": "integer",
+          "description": "Final Naira balance at graduation."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Narrative summary of the student's 4-year UNN journey."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the record was created via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the record was updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "studentName",
+        "regNumber",
+        "department",
+        "finalCgpa",
+        "degreeClass",
+        "finalTitle",
+        "netWorthNaira",
+        "summary",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/careers/{careerId}": {
+      "schema": {
+        "$ref": "#/entities/StudentCareer"
+      },
+      "description": "Stores active and past UNN student simulation careers scoped to the authenticated user."
+    },
+    "/users/{userId}/hall_of_fame/{recordId}": {
+      "schema": {
+        "$ref": "#/entities/AlumniRecord"
+      },
+      "description": "Stores convocation and graduation Hall of Fame records scoped to the authenticated user."
+    }
+  }
+}
